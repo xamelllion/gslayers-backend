@@ -1,44 +1,43 @@
 from django.shortcuts import render, HttpResponse
-from django.http import JsonResponse, FileResponse
+from django.http import JsonResponse
 
-from django.views.decorators.csrf import csrf_protect, csrf_exempt
+from django.views.decorators.csrf import csrf_exempt
 import json
-from string import ascii_lowercase
-from random import choices
 
-from .models import Game
+from .models import Game, Teams, Players
+from .stuff import create_code
+from .stuff import build_players_object, build_team_list
 
-def create_code():
-    a = choices(list(ascii_lowercase), k=8)
-    return ''.join(a)
-
+from django.forms.models import model_to_dict
 
 @csrf_exempt
-def gen(request):
+def createLink(request):
+    '''
+    Создание ссылки для лобби
+    Создание лобби
+    '''
     if request.method == 'POST':
         data = json.loads(request.body)
         print(data)
 
-        '''
-        need to create 'lobby'
-        '''
-
         lobby_code = create_code()
 
         lobby_link = f"{request.scheme}://{request.META['HTTP_HOST']}/alias/?lobby={lobby_code}"
-        player_code = create_code()
 
         game = Game(
-            lobby_id=lobby_code,
-            status=data['status'],
-            settings=json.dumps(data['settings'])
+            lobbyId=lobby_code,
+            settings=data['settings']
             )
         game.save()
+        # t = Teams(
+        #     lobbyId=lobby_code
+        # )
+        # t.save()
 
+        print(lobby_link)
         return JsonResponse({
             'lobbyId': lobby_code,
-            'lobbyLink': lobby_link,
-            'playerId': player_code
+            'lobbyLink': lobby_link
         })
 
 
@@ -47,16 +46,99 @@ def home(request):
 
 
 @csrf_exempt
-def alias(request):
-    a = request.GET
-    if 'lobby' not in request.GET:
-        return JsonResponse({'error': 1})
+def lobbyExist(request):
     
-    code = request.GET['lobby']
+    if 'newLobby' in request.GET:
+        lobbyId = create_code()
+        game = Game(
+            lobbyId=lobbyId,
+            settings={'points': 30, 'time': 30, 'mode': 'medium'}
+            )
+        game.save()
+        # t = Teams(
+        #     lobbyId=lobbyId,
+        #     points=0,
+        #     guessing=0,
+        #     explaining=0,
+        #     players={}
+        # )
+        # t.save()
 
-    g = Game.objects.filter(lobby_id=code)
+        name = request.GET['name']
+        
+        currentP = create_code()
 
-    if len(g) == 0:
-        return JsonResponse({'exist': False})
-    
-    return JsonResponse({'exist': True})
+        player = Players(
+            lobbyId=lobbyId,
+            playerId=currentP,
+            name=name,
+            team='None'
+        )
+        player.save()
+        
+        
+        game.lobbyAdmin = currentP
+        game.save()
+
+        players = Players.objects.filter(lobbyId=lobbyId)
+        teams = Teams.objects.filter(lobbyId=lobbyId)
+
+        players_obj, lobbyAdmin = build_players_object(players, game.lobbyAdmin)
+        teams_list = build_team_list(teams)
+
+
+        return JsonResponse({
+            'currentPlayer': currentP,
+            'lobbyId': lobbyId,
+            'admin': lobbyAdmin,
+            'settings': game.settings,
+            'teams': teams_list,
+            'players': players_obj   
+            })
+
+    if 'lobby' in request.GET:
+        lobbyId = request.GET['lobby']
+        name = request.GET['name']
+
+        try:
+            game = Game.objects.get(lobbyId=lobbyId)
+        except Exception:
+            return JsonResponse({'exist': False, 'data': {}})
+        
+        
+        currentP = create_code()
+        
+        players = Players.objects.filter(lobbyId=lobbyId)
+
+        if len(players) == 0:
+            game.lobbyAdmin = currentP
+            game.save()
+
+        player = Players(
+            lobbyId=lobbyId,
+            playerId=currentP,
+            name=name,
+            team='None'
+        )
+        player.save()
+        
+
+        players = Players.objects.filter(lobbyId=lobbyId)
+        teams = Teams.objects.filter(lobbyId=lobbyId)
+
+        players_obj, lobbyAdmin = build_players_object(players, game.lobbyAdmin)
+        teams_list = build_team_list(teams)
+
+
+        return JsonResponse({
+            'exist': True,
+            'data': {
+                'currentPlayer': currentP,
+                'lobbyId': lobbyId,
+                'admin': lobbyAdmin,
+                'settings': game.settings,
+                'teams': teams_list,
+                'players': players_obj
+                }
+            })
+

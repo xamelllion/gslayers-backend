@@ -1,16 +1,16 @@
 from django.db import models
-# from django.contrib.postgres.fields import JSONField
 from django.db.models import JSONField
 
 class Game(models.Model):
-    lobby_id = models.CharField(max_length=32)
-    status = models.CharField(max_length=32)
+    lobbyId = models.CharField(max_length=36)
+    lobbyAdmin = models.CharField(max_length=36)
     settings = JSONField()
 
 
 class Teams(models.Model):
-    lobby_id = models.CharField(max_length=32)
-    name = models.CharField(max_length=32)
+    lobbyId = models.CharField(max_length=36)
+    commandId = models.CharField(max_length=36)
+    name = models.CharField(max_length=36)
     points = models.IntegerField()
     players = JSONField()
     guessing = models.IntegerField()
@@ -18,8 +18,8 @@ class Teams(models.Model):
 
 
 class Players(models.Model):
-    lobby_id = models.CharField(max_length=32)
-    is_admin = models.CharField(max_length=32)
-    player_id = models.CharField(max_length=32)
-    status = models.CharField(max_length=32)
-    team = models.CharField(max_length=32)
+    lobbyId = models.CharField(max_length=36)
+    playerId = models.CharField(max_length=36)
+    name = models.CharField(max_length=36)
+    team = models.CharField(max_length=36)
+
