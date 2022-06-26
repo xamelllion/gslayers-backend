@@ -24,18 +24,6 @@ class ChatConsumer(WebsocketConsumer):
         )
         self.accept()
 
-        # player = Players(
-        #     lobbyId=lobbyId,
-        #     playerId=create_code(),
-        #     name='',
-        #     team='None'
-        # )
-        # player.save()
-
-        # self.send(text_data=json.dumps({
-        #     'type': 'chat-chank',
-        #     'data': ''
-        # }))
         g = Game.objects.get(lobbyId=lobbyId)
         players = Players.objects.filter(lobbyId=lobbyId)
         teams = Teams.objects.filter(lobbyId=lobbyId)
@@ -104,8 +92,6 @@ class ChatConsumer(WebsocketConsumer):
 
         players_obj, lobbyAdmin = build_players_object(players, g.lobbyAdmin)
         teams_list = build_team_list(teams)
-        # f = Game.objects.get(lobbyId=lobbyId)
-        # print(f.setings)
 
         d = {
             'admin': g.lobbyAdmin,

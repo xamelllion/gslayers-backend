@@ -3,8 +3,6 @@ from random import choices
 
 from django.forms.models import model_to_dict
 
-from .models import Game, Teams, Players
-
 
 def create_code():
     code = choices(list(ascii_lowercase), k=8)
@@ -57,8 +55,4 @@ def build_team_list(teams):
                 'explaining': 2,
             }
         ]
-        # t = Teams(
-        #     commandId=commandId
-        # )
-        # t.save()
     return team_list

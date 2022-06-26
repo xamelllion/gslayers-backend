@@ -1,4 +1,4 @@
-from django.shortcuts import render, HttpResponse
+from django.shortcuts import HttpResponse
 from django.http import JsonResponse
 
 from django.views.decorators.csrf import csrf_exempt
@@ -8,14 +8,9 @@ from .models import Game, Teams, Players
 from .stuff import create_code
 from .stuff import build_players_object, build_team_list
 
-from django.forms.models import model_to_dict
 
 @csrf_exempt
 def createLink(request):
-    '''
-    Создание ссылки для лобби
-    Создание лобби
-    '''
     if request.method == 'POST':
         data = json.loads(request.body)
         print(data)
@@ -29,10 +24,7 @@ def createLink(request):
             settings=data['settings']
             )
         game.save()
-        # t = Teams(
-        #     lobbyId=lobby_code
-        # )
-        # t.save()
+
 
         print(lobby_link)
         return JsonResponse({
@@ -55,29 +47,21 @@ def lobbyExist(request):
             settings={'points': 30, 'time': 30, 'mode': 'medium'}
             )
         game.save()
-        # t = Teams(
-        #     lobbyId=lobbyId,
-        #     points=0,
-        #     guessing=0,
-        #     explaining=0,
-        #     players={}
-        # )
-        # t.save()
 
         name = request.GET['name']
         
-        currentP = create_code()
+        playerId = create_code()
 
         player = Players(
             lobbyId=lobbyId,
-            playerId=currentP,
+            playerId=playerId,
             name=name,
             team='None'
         )
         player.save()
         
         
-        game.lobbyAdmin = currentP
+        game.lobbyAdmin = playerId
         game.save()
 
         players = Players.objects.filter(lobbyId=lobbyId)
@@ -86,15 +70,16 @@ def lobbyExist(request):
         players_obj, lobbyAdmin = build_players_object(players, game.lobbyAdmin)
         teams_list = build_team_list(teams)
 
-
         return JsonResponse({
-            'currentPlayer': currentP,
+            'currentPlayer': playerId,
             'lobbyId': lobbyId,
             'admin': lobbyAdmin,
             'settings': game.settings,
             'teams': teams_list,
             'players': players_obj   
-            })
+        })
+
+
 
     if 'lobby' in request.GET:
         lobbyId = request.GET['lobby']
@@ -106,17 +91,17 @@ def lobbyExist(request):
             return JsonResponse({'exist': False, 'data': {}})
         
         
-        currentP = create_code()
+        playerId = create_code()
         
         players = Players.objects.filter(lobbyId=lobbyId)
 
         if len(players) == 0:
-            game.lobbyAdmin = currentP
+            game.lobbyAdmin = playerId
             game.save()
 
         player = Players(
             lobbyId=lobbyId,
-            playerId=currentP,
+            playerId=playerId,
             name=name,
             team='None'
         )
@@ -133,12 +118,12 @@ def lobbyExist(request):
         return JsonResponse({
             'exist': True,
             'data': {
-                'currentPlayer': currentP,
+                'currentPlayer': playerId,
                 'lobbyId': lobbyId,
                 'admin': lobbyAdmin,
                 'settings': game.settings,
                 'teams': teams_list,
                 'players': players_obj
-                }
-            })
+            }
+        })
 
