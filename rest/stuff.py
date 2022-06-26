@@ -3,6 +3,8 @@ from random import choices
 
 from django.forms.models import model_to_dict
 
+from .models import Game, Teams, Players
+
 
 def create_code():
     code = choices(list(ascii_lowercase), k=8)
@@ -56,3 +58,18 @@ def build_team_list(teams):
             }
         ]
     return team_list
+
+def build_ws_object(lobbyId):
+    game = Game.objects.get(lobbyId=lobbyId)
+    players = Players.objects.filter(lobbyId=lobbyId)
+    teams = Teams.objects.filter(lobbyId=lobbyId)
+
+    players_obj, lobbyAdmin = build_players_object(players, game.lobbyAdmin)
+    teams_list = build_team_list(teams)
+    
+    return {
+        'admin': game.lobbyAdmin,
+        'settings': game.settings,
+        'teams': teams_list,
+        'players': players_obj
+    }

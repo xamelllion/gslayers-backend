@@ -1,4 +1,3 @@
-from cgitb import text
 import json
 from channels.generic.websocket import WebsocketConsumer
 from asgiref.sync import async_to_sync
@@ -6,7 +5,7 @@ from asgiref.sync import async_to_sync
 from .stuff import build_players_object, build_team_list
 from .models import Game, Teams, Players
 
-from .stuff import create_code
+from .stuff import create_code, build_ws_object
 
 
 class ChatConsumer(WebsocketConsumer):
@@ -24,28 +23,26 @@ class ChatConsumer(WebsocketConsumer):
         )
         self.accept()
 
-        g = Game.objects.get(lobbyId=lobbyId)
-        players = Players.objects.filter(lobbyId=lobbyId)
-        teams = Teams.objects.filter(lobbyId=lobbyId)
-
-        players_obj, lobbyAdmin = build_players_object(players, g.lobbyAdmin)
-        teams_list = build_team_list(teams)
-        
-        d = {
-            'admin': g.lobbyAdmin,
-            'settings': g.settings,
-            'teams': teams_list,
-            'players': players_obj
-        }
-
         async_to_sync(self.channel_layer.group_send)(
             self.room_group_name,
             {
-            'type': 'chat_message',
-            'data': d
+            'type': 'broadcast',
+            'data': build_ws_object(lobbyId)
             }
         )
     
+
+    def disconnect(self, close_code):
+        
+        async_to_sync(self.channel_layer.group_send)(
+            self.room_group_name,
+            {
+            'type': 'broadcast',
+            'data': build_ws_object(lobbyId)
+            }
+        )
+
+
     def receive(self, text_data):
         print(text_data)
         print('--------------------')
@@ -86,31 +83,21 @@ class ChatConsumer(WebsocketConsumer):
                         explaining=el['explaining']
                     )
                 t.save()
-        
-        players = Players.objects.filter(lobbyId=lobbyId)
-        teams = Teams.objects.filter(lobbyId=lobbyId)
 
-        players_obj, lobbyAdmin = build_players_object(players, g.lobbyAdmin)
-        teams_list = build_team_list(teams)
-
-        d = {
-            'admin': g.lobbyAdmin,
-            'settings': g.settings,
-            'teams': teams_list,
-            'players': players_obj
-        }
+        d = build_ws_object(lobbyId)
         print(d)
         print('--------------------')
 
         async_to_sync(self.channel_layer.group_send)(
             self.room_group_name,
             {
-            'type': 'chat_message',
+            'type': 'broadcast',
             'data': d
             }
         )
     
-    def chat_message(self, event):
+    
+    def broadcast(self, event):
         self.send(text_data=json.dumps({
             'data': event['data']
         }))

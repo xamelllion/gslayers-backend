@@ -8,6 +8,9 @@ from .models import Game, Teams, Players
 from .stuff import create_code
 from .stuff import build_players_object, build_team_list
 
+from .serializers import TeamSerializer
+
+from rest_framework.response import Response
 
 @csrf_exempt
 def createLink(request):
@@ -111,9 +114,12 @@ def lobbyExist(request):
         players = Players.objects.filter(lobbyId=lobbyId)
         teams = Teams.objects.filter(lobbyId=lobbyId)
 
+        serializer = TeamSerializer(teams, many=True)
+        print(dict(serializer.data))
+
         players_obj, lobbyAdmin = build_players_object(players, game.lobbyAdmin)
         teams_list = build_team_list(teams)
-
+        print(teams_list)
 
         return JsonResponse({
             'exist': True,
