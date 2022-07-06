@@ -60,7 +60,7 @@ def build_team_list(teams):
                     1: None,
                 },
                 'guessing': 0,
-                'explaining': 0,
+                'explaining': 1,
             }
         ]
     return team_list
