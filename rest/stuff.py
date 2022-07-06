@@ -13,7 +13,8 @@ def create_code():
 
 def build_players_object(players, lobbyAdmin):
     obj = {}
-    check = False
+    check = True
+    admin = ''
     for element in players:
         element = model_to_dict(element)
         playerId = element['playerId']
@@ -27,8 +28,13 @@ def build_players_object(players, lobbyAdmin):
 
         obj[playerId] = element
 
-        if element['id'] == lobbyAdmin:
-            check = True
+        if element['id'] != lobbyAdmin and check == True:
+            admin = element['id']
+        else:
+            check = False
+    
+    if check:
+        lobbyAdmin = admin
 
     return obj, lobbyAdmin
 
@@ -53,11 +59,12 @@ def build_team_list(teams):
                     0: None,
                     1: None,
                 },
-                'guessing': 1,
-                'explaining': 2,
+                'guessing': 0,
+                'explaining': 0,
             }
         ]
     return team_list
+
 
 def build_ws_object(lobbyId):
     game = Game.objects.get(lobbyId=lobbyId)
@@ -66,6 +73,9 @@ def build_ws_object(lobbyId):
 
     players_obj, lobbyAdmin = build_players_object(players, game.lobbyAdmin)
     teams_list = build_team_list(teams)
+    
+    game.lobbyAdmin = lobbyAdmin
+    game.save()
     
     return {
         'admin': game.lobbyAdmin,

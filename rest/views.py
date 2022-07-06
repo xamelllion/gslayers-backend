@@ -4,36 +4,17 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
 
-from .models import Game, Teams, Players
+from .models import Game, Teams, Players, Words
 from .stuff import create_code
 from .stuff import build_players_object, build_team_list
+
 
 from .serializers import TeamSerializer
 
 from rest_framework.response import Response
 
-@csrf_exempt
-def createLink(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        print(data)
-
-        lobby_code = create_code()
-
-        lobby_link = f"{request.scheme}://{request.META['HTTP_HOST']}/alias/?lobby={lobby_code}"
-
-        game = Game(
-            lobbyId=lobby_code,
-            settings=data['settings']
-            )
-        game.save()
-
-
-        print(lobby_link)
-        return JsonResponse({
-            'lobbyId': lobby_code,
-            'lobbyLink': lobby_link
-        })
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 
 def home(request):
@@ -48,7 +29,7 @@ def lobbyExist(request):
         game = Game(
             lobbyId=lobbyId,
             settings={'points': 30, 'time': 30, 'mode': 'medium'}
-            )
+        )
         game.save()
 
         name = request.GET['name']
@@ -72,6 +53,9 @@ def lobbyExist(request):
 
         players_obj, lobbyAdmin = build_players_object(players, game.lobbyAdmin)
         teams_list = build_team_list(teams)
+
+        game.lobbyAdmin = lobbyAdmin
+        game.save()
 
         return JsonResponse({
             'currentPlayer': playerId,
@@ -115,11 +99,14 @@ def lobbyExist(request):
         teams = Teams.objects.filter(lobbyId=lobbyId)
 
         serializer = TeamSerializer(teams, many=True)
-        print(dict(serializer.data))
+        print(serializer.data)
 
         players_obj, lobbyAdmin = build_players_object(players, game.lobbyAdmin)
         teams_list = build_team_list(teams)
         print(teams_list)
+
+        game.lobbyAdmin = lobbyAdmin
+        game.save()
 
         return JsonResponse({
             'exist': True,
@@ -133,3 +120,23 @@ def lobbyExist(request):
             }
         })
 
+
+def fetchWords(request):
+    lobbyId = request.GET['lobby']
+    if 'wordsFetched' in request.GET and \
+         request.GET['wordsFetched'] == 'true':
+
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            lobbyId,
+            {'type': 'broadcast', 'data': {'wordsSettled': True}}
+        )
+        return JsonResponse({})
+        
+    
+    game = Game.objects.get(lobbyId=lobbyId)
+    mode = game.settings['mode']
+
+    words = [query.word for query in Words.objects.filter(mode=mode)]
+
+    return JsonResponse({'words': words})

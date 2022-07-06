@@ -2,3 +2,4 @@ resp.json
 test.py
 */__pycache__/*
 */migrations/*
+test/

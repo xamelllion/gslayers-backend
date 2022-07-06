@@ -1,3 +1,4 @@
+
 from django.db import models
 from django.db.models import JSONField
 
@@ -23,3 +24,7 @@ class Players(models.Model):
     name = models.CharField(max_length=36)
     team = models.CharField(max_length=36)
 
+
+class Words(models.Model):
+    mode = models.CharField(max_length=36)
+    word = models.CharField(max_length=256)

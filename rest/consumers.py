@@ -23,13 +23,13 @@ class ChatConsumer(WebsocketConsumer):
         )
         self.accept()
 
-        async_to_sync(self.channel_layer.group_send)(
-            self.room_group_name,
-            {
-            'type': 'broadcast',
-            'data': build_ws_object(lobbyId)
-            }
-        )
+        # async_to_sync(self.channel_layer.group_send)(
+        #     self.room_group_name,
+        #     {
+        #     'type': 'broadcast',
+        #     'data': build_ws_object(lobbyId)
+        #     }
+        # )
     
 
     def disconnect(self, close_code):
@@ -83,8 +83,15 @@ class ChatConsumer(WebsocketConsumer):
                         explaining=el['explaining']
                     )
                 t.save()
-
-        d = build_ws_object(lobbyId)
+        
+        if 'ids' in text_data.keys():
+            del text_data['ids']
+        if 'entities' in text_data.keys():
+            text_data['players'] = text_data['entities']
+            del text_data['entities']
+        d = text_data
+        
+        # d = build_ws_object(lobbyId)
         print(d)
         print('--------------------')
 
