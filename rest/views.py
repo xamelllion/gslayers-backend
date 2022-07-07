@@ -127,9 +127,14 @@ def fetchWords(request):
          request.GET['wordsFetched'] == 'true':
 
         channel_layer = get_channel_layer()
+        # print(channel_layer)
         async_to_sync(channel_layer.group_send)(
             lobbyId,
-            {'type': 'broadcast', 'data': {'wordsSettled': True}}
+            {
+                'type': 'broadcast',
+                'data': {'wordsSettled': True},
+                'sender_channel_name': ''
+            }
         )
         return JsonResponse({})
         

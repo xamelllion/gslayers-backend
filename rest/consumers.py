@@ -23,13 +23,20 @@ class ChatConsumer(WebsocketConsumer):
         )
         self.accept()
 
-        # async_to_sync(self.channel_layer.group_send)(
-        #     self.room_group_name,
-        #     {
-        #     'type': 'broadcast',
-        #     'data': build_ws_object(lobbyId)
-        #     }
-        # )
+        g = Game.objects.get(lobbyId=lobbyId)
+        players = Players.objects.filter(lobbyId=lobbyId)
+        p, _ = build_players_object(players, g.lobbyAdmin)
+
+        async_to_sync(self.channel_layer.group_send)(
+            self.room_group_name,
+            {
+            'type': 'broadcast',
+            'data': {
+                'players': p
+            },
+            'sender_channel_name': self.channel_name
+            }
+        )
     
 
     def disconnect(self, close_code):
@@ -38,7 +45,8 @@ class ChatConsumer(WebsocketConsumer):
             self.room_group_name,
             {
             'type': 'broadcast',
-            'data': build_ws_object(lobbyId)
+            'data': build_ws_object(lobbyId),
+            'sender_channel_name': self.channel_name
             }
         )
 
@@ -99,12 +107,23 @@ class ChatConsumer(WebsocketConsumer):
             self.room_group_name,
             {
             'type': 'broadcast',
-            'data': d
+            'data': d,
+            'sender_channel_name': self.channel_name
             }
         )
     
     
     def broadcast(self, event):
-        self.send(text_data=json.dumps({
-            'data': event['data']
-        }))
+        print(event)
+        if self.channel_name != event['sender_channel_name']:
+            self.send(text_data=json.dumps({
+                'data': event['data']
+            }))
+    
+    def new_player_connect(self, event):
+        print('New player event')
+        print(event)
+        if self.channel_name != event['sender_channel_name']:
+            self.send(text_data=json.dumps({
+                'players': event['players']
+            }))
