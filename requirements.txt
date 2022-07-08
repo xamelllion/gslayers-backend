@@ -1,5 +1,8 @@
 django
 psycopg2
 channels
+channels_redis
 django-cors-headers
 djangorestframework
+gunicorn
+python-dotenv

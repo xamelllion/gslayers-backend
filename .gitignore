@@ -3,3 +3,5 @@ test.py
 */__pycache__/*
 */migrations/*
 test/
+production/
+.env
