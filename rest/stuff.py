@@ -11,10 +11,14 @@ def create_code():
     return ''.join(code)
 
 
-def build_players_object(players, lobbyAdmin):
+def build_players_object(players, lobbyAdmin=None):
     obj = {}
     check = True
     admin = ''
+    
+    if lobbyAdmin is None:
+        check = False
+
     for element in players:
         element = model_to_dict(element)
         playerId = element['playerId']

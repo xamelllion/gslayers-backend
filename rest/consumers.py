@@ -7,7 +7,7 @@ from .models import Game, Teams, Players
 
 from .stuff import create_code, build_ws_object
 
-
+# при подключению к сокету через _ указывать lobby_playerId
 class ChatConsumer(WebsocketConsumer):
 
     lobbyId = ''
@@ -17,15 +17,17 @@ class ChatConsumer(WebsocketConsumer):
         lobbyId = self.scope['url_route']['kwargs']['lobby_id']
 
         self.room_group_name = lobbyId
+        print('^^^^^^^^^^^^^^^^^^^')
+        print(self.room_group_name, self.channel_name)
         async_to_sync(self.channel_layer.group_add)(
             self.room_group_name,
             self.channel_name
         )
         self.accept()
 
-        g = Game.objects.get(lobbyId=lobbyId)
+        # g = Game.objects.get(lobbyId=lobbyId)
         players = Players.objects.filter(lobbyId=lobbyId)
-        p, _ = build_players_object(players, g.lobbyAdmin)
+        p, _ = build_players_object(players)
 
         async_to_sync(self.channel_layer.group_send)(
             self.room_group_name,
@@ -40,7 +42,7 @@ class ChatConsumer(WebsocketConsumer):
     
 
     def disconnect(self, close_code):
-        
+        print(self.channel_name, close_code)
         async_to_sync(self.channel_layer.group_send)(
             self.room_group_name,
             {
