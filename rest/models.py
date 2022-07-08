@@ -6,6 +6,7 @@ class Game(models.Model):
     lobbyId = models.CharField(max_length=36)
     lobbyAdmin = models.CharField(max_length=36)
     settings = JSONField()
+    creationTime = models.DateTimeField()
 
 
 class Teams(models.Model):

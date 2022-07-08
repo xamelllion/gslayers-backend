@@ -4,5 +4,6 @@ from . import views
 urlpatterns = [
     path('', views.home),
     path('alias/', views.lobbyExist),
-    path('words/', views.fetchWords)
+    path('words/', views.fetchWords),
+    path('clean/', views.clean)
 ]

@@ -6,7 +6,7 @@ import json
 
 from .models import Game, Teams, Players, Words
 from .stuff import create_code, generate_unique_id
-from .stuff import build_players_object, build_team_list
+from .stuff import build_players_object, build_team_list, remove_old_data
 
 
 from .serializers import TeamSerializer
@@ -15,6 +15,19 @@ from rest_framework.response import Response
 
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+from datetime import datetime
+import os
+
+
+@csrf_exempt
+def clean(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        if data['key'] == os.environ.get('KEY'):
+            remove_old_data()
+        return JsonResponse({'code': 1})
+    return JsonResponse({'code': 0})
+
 
 
 def home(request):
@@ -28,7 +41,8 @@ def lobbyExist(request):
         lobbyId = create_code()
         game = Game(
             lobbyId=lobbyId,
-            settings={'points': 30, 'time': 30, 'mode': 'medium'}
+            settings={'points': 30, 'time': 30, 'mode': 'medium'},
+            creationTime=datetime.now()
         )
         game.save()
 

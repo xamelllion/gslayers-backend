@@ -5,7 +5,7 @@ from uuid import uuid4
 from django.forms.models import model_to_dict
 
 from .models import Game, Teams, Players
-
+from datetime import datetime, timezone
 
 def create_code():
     code = choices(list(ascii_lowercase), k=8)
@@ -111,3 +111,17 @@ def on_player_disconnect(playerId):
         t.save()
     except Exception:
         pass
+
+
+def remove_old_data():
+    games = Game.objects.all()
+    current_time = datetime.now()
+
+    for game_obj in games:
+        difference = current_time - game_obj.creationTime
+        if difference.days >= 1:
+            lobbyId = game_obj.lobbyId
+
+            Game.objects.get(lobbyId=lobbyId).delete()
+            Players.objects.filter(lobbyId=lobbyId).delete()
+            Teams.objects.filter(lobbyId=lobbyId).delete()
