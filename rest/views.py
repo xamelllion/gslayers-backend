@@ -5,7 +5,7 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 
 from .models import Game, Teams, Players, Words
-from .stuff import create_code
+from .stuff import create_code, generate_unique_id
 from .stuff import build_players_object, build_team_list
 
 
@@ -34,7 +34,7 @@ def lobbyExist(request):
 
         name = request.GET['name']
         
-        playerId = create_code()
+        playerId = generate_unique_id()
 
         player = Players(
             lobbyId=lobbyId,
@@ -78,7 +78,7 @@ def lobbyExist(request):
             return JsonResponse({'exist': False, 'data': {}})
         
         
-        playerId = create_code()
+        playerId = generate_unique_id()
         
         players = Players.objects.filter(lobbyId=lobbyId)
 
@@ -98,8 +98,8 @@ def lobbyExist(request):
         players = Players.objects.filter(lobbyId=lobbyId)
         teams = Teams.objects.filter(lobbyId=lobbyId)
 
-        serializer = TeamSerializer(teams, many=True)
-        print(serializer.data)
+        # serializer = TeamSerializer(teams, many=True)
+        # print(serializer.data)
 
         players_obj, lobbyAdmin = build_players_object(players, game.lobbyAdmin)
         teams_list = build_team_list(teams)

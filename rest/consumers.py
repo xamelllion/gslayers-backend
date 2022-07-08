@@ -5,20 +5,23 @@ from asgiref.sync import async_to_sync
 from .stuff import build_players_object, build_team_list
 from .models import Game, Teams, Players
 
-from .stuff import create_code, build_ws_object
+from .stuff import create_code, build_ws_object, on_player_disconnect
 
-# при подключению к сокету через _ указывать lobby_playerId
 class ChatConsumer(WebsocketConsumer):
 
     lobbyId = ''
 
     def connect(self):
         global lobbyId
-        lobbyId = self.scope['url_route']['kwargs']['lobby_id']
+        info = self.scope['url_route']['kwargs']['info']
+        lobbyId, playerId = info.split('_')
 
+        self.room_name = playerId
         self.room_group_name = lobbyId
+        
+        print(self.room_group_name, self.channel_name, self.room_name)
         print('^^^^^^^^^^^^^^^^^^^')
-        print(self.room_group_name, self.channel_name)
+
         async_to_sync(self.channel_layer.group_add)(
             self.room_group_name,
             self.channel_name
@@ -42,7 +45,10 @@ class ChatConsumer(WebsocketConsumer):
     
 
     def disconnect(self, close_code):
-        print(self.channel_name, close_code)
+
+        # remove player from players and teams objects
+        on_player_disconnect(self.room_name)
+
         async_to_sync(self.channel_layer.group_send)(
             self.room_group_name,
             {
@@ -50,6 +56,10 @@ class ChatConsumer(WebsocketConsumer):
             'data': build_ws_object(lobbyId),
             'sender_channel_name': self.channel_name
             }
+        )
+        async_to_sync(self.channel_layer.group_discard)(
+            self.room_group_name,
+            self.channel_name
         )
 
 
@@ -64,13 +74,19 @@ class ChatConsumer(WebsocketConsumer):
         if 'entities' in text_data:
             e = text_data['entities']
             for k, v in e.items():
-
-                p = Players(
-                    lobbyId=lobbyId,
-                    playerId=k,
-                    name=v['name'],
-                    team=str(v['team'])
-                )
+                try:
+                    p = Players.objects.get(playerId=k)
+                    p.lobbyId = lobbyId
+                    p.name = v['name']
+                    p.team = str(v['team'])
+                    p.save()
+                except Exception:
+                    p = Players(
+                        lobbyId=lobbyId,
+                        playerId=k,
+                        name=v['name'],
+                        team=str(v['team'])
+                    )
                 p.save()
         if 'teams' in text_data:
             for el in text_data['teams']:

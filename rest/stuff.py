@@ -1,5 +1,6 @@
 from string import ascii_lowercase
 from random import choices
+from uuid import uuid4
 
 from django.forms.models import model_to_dict
 
@@ -10,12 +11,15 @@ def create_code():
     code = choices(list(ascii_lowercase), k=8)
     return ''.join(code)
 
+def generate_unique_id():
+    return str(uuid4())
+
 
 def build_players_object(players, lobbyAdmin=None):
     obj = {}
     check = True
     admin = ''
-    
+
     if lobbyAdmin is None:
         check = False
 
@@ -53,7 +57,7 @@ def build_team_list(teams):
         team_list.append(element)
 
     if len(team_list) == 0:
-        commandId = create_code()
+        commandId = generate_unique_id()
         team_list = [
             {
                 'id': commandId,
@@ -87,3 +91,23 @@ def build_ws_object(lobbyId):
         'teams': teams_list,
         'players': players_obj
     }
+
+
+def on_player_disconnect(playerId):
+    p = Players.objects.get(playerId=playerId)
+    lobbyId = p.lobbyId
+    p.delete()
+
+    try:
+        t = Teams.objects.get(lobbyId=lobbyId)
+        obj = t.players
+
+        for key, value in obj.items():
+            if value == playerId:
+                obj[key] = None
+                break
+
+        t.players = obj
+        t.save()
+    except Exception:
+        pass
