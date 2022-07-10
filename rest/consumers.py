@@ -19,8 +19,6 @@ class ChatConsumer(WebsocketConsumer):
         self.room_name = playerId
         self.room_group_name = lobbyId
         
-        print(self.room_group_name, self.channel_name, self.room_name)
-        print('^^^^^^^^^^^^^^^^^^^')
 
         async_to_sync(self.channel_layer.group_add)(
             self.room_group_name,
@@ -64,7 +62,7 @@ class ChatConsumer(WebsocketConsumer):
 
 
     def receive(self, text_data):
-        print(text_data)
+        print('Пришло', text_data)
         print('--------------------')
         text_data = json.loads(text_data)
         g = Game.objects.get(lobbyId=lobbyId)
@@ -118,7 +116,7 @@ class ChatConsumer(WebsocketConsumer):
         d = text_data
         
         # d = build_ws_object(lobbyId)
-        print(d)
+        print('Отправил', d)
         print('--------------------')
 
         async_to_sync(self.channel_layer.group_send)(
@@ -132,7 +130,7 @@ class ChatConsumer(WebsocketConsumer):
     
     
     def broadcast(self, event):
-        print(event)
+        # print(event)
         if self.channel_name != event['sender_channel_name']:
             self.send(text_data=json.dumps({
                 'data': event['data']

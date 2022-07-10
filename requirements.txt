@@ -1,8 +1,13 @@
 django
-psycopg2
+psycopg2-binary
+
 channels
 channels_redis
+
 django-cors-headers
 djangorestframework
+
 gunicorn
+daphne
+
 python-dotenv
