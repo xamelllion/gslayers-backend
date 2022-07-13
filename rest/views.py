@@ -38,7 +38,12 @@ def home(request):
 def lobbyExist(request):
     
     if 'newLobby' in request.GET:
-        lobbyId = create_code()
+        
+        while True:
+            lobbyId = create_code()
+            check_lobby = Game.objects.filter(lobbyId=lobbyId)
+            if len(check_lobby) == 0: break
+
         game = Game(
             lobbyId=lobbyId,
             settings={'points': 30, 'time': 30, 'mode': 'medium'},
