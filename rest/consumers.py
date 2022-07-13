@@ -2,10 +2,11 @@ import json
 from channels.generic.websocket import WebsocketConsumer
 from asgiref.sync import async_to_sync
 
-from .stuff import build_players_object, build_team_list
+from .stuff import build_players_object
 from .models import Game, Teams, Players
 
-from .stuff import create_code, build_ws_object, on_player_disconnect, remove_old_teams
+from .stuff import build_ws_object, on_player_disconnect, remove_old_teams
+
 
 class ChatConsumer(WebsocketConsumer):
 
@@ -19,7 +20,6 @@ class ChatConsumer(WebsocketConsumer):
         self.room_name = playerId
         self.room_group_name = lobbyId
         
-
         async_to_sync(self.channel_layer.group_add)(
             self.room_group_name,
             self.channel_name
