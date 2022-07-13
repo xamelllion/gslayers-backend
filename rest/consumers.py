@@ -5,7 +5,7 @@ from asgiref.sync import async_to_sync
 from .stuff import build_players_object, build_team_list
 from .models import Game, Teams, Players
 
-from .stuff import create_code, build_ws_object, on_player_disconnect
+from .stuff import create_code, build_ws_object, on_player_disconnect, remove_old_teams
 
 class ChatConsumer(WebsocketConsumer):
 
@@ -46,12 +46,14 @@ class ChatConsumer(WebsocketConsumer):
 
         # remove player from players and teams objects
         on_player_disconnect(self.room_name)
+        d = build_ws_object(lobbyId)
+        print('Отправил после disconnect:', d)
 
         async_to_sync(self.channel_layer.group_send)(
             self.room_group_name,
             {
             'type': 'broadcast',
-            'data': build_ws_object(lobbyId),
+            'data': d,
             'sender_channel_name': self.channel_name
             }
         )
@@ -107,6 +109,11 @@ class ChatConsumer(WebsocketConsumer):
                         explaining=el['explaining']
                     )
                 t.save()
+            
+            # remove teams from db whitch was removed by user
+            remove_old_teams(text_data['teams'], lobbyId)
+        
+        
         
         if 'ids' in text_data.keys():
             del text_data['ids']

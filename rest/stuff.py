@@ -125,3 +125,12 @@ def remove_old_data():
             Game.objects.get(lobbyId=lobbyId).delete()
             Players.objects.filter(lobbyId=lobbyId).delete()
             Teams.objects.filter(lobbyId=lobbyId).delete()
+
+
+def remove_old_teams(teams: list, lobbyId: str) -> None:
+    teams_from_client = [x['id'] for x in teams]
+    teams_from_db = Teams.objects.filter(lobbyId=lobbyId)
+
+    for team in teams_from_db:
+        if team.commandId not in teams_from_client:
+            team.delete()
