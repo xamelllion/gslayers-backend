@@ -7,6 +7,7 @@ from .models import Game, Teams, Players
 
 from .stuff import build_ws_object, on_player_disconnect, remove_old_teams
 
+from .serializers import TeamSerializer, PlayerSerializer
 
 class ChatConsumer(WebsocketConsumer):
 
@@ -64,89 +65,74 @@ class ChatConsumer(WebsocketConsumer):
 
 
     def receive(self, text_data):
-        print('Пришло', text_data)
+        received_data = json.loads(text_data)
+
+        print('Пришло', received_data)
         print('--------------------')
-        text_data = json.loads(text_data)
+
         g = Game.objects.get(lobbyId=lobbyId)
-        if 'settings' in text_data:
-            g.settings = text_data['settings']
+
+        if 'settings' in received_data:
+            g.settings = received_data['settings']
             g.save()
-        if 'entities' in text_data:
-            e = text_data['entities']
-            for k, v in e.items():
+
+        if 'entities' in received_data:
+            e = received_data['entities'].copy()
+            for key, value in e.items():
+                value['lobbyId'] = lobbyId
+                value['playerId'] = value['id']
+                value['team'] = str(value['team'])
                 try:
-                    p = Players.objects.get(playerId=k)
-                    p.lobbyId = lobbyId
-                    p.name = v['name']
-                    p.team = str(v['team'])
-                    p.save()
+                    p = Players.objects.get(playerId=key)
+                    serializer = PlayerSerializer(instance=p, data=value)
+                    if serializer.is_valid():
+                        serializer.save()
                 except Exception:
-                    p = Players(
-                        lobbyId=lobbyId,
-                        playerId=k,
-                        name=v['name'],
-                        team=str(v['team'])
-                    )
-                p.save()
-        if 'teams' in text_data:
-            for el in text_data['teams']:
+                    serializer = PlayerSerializer(data=value)
+                    if serializer.is_valid():
+                        serializer.save()
+
+        if 'teams' in received_data:
+            for el in received_data['teams'].copy():
+                el['lobbyId'] = lobbyId
+                el['commandId'] = el['id']
+
                 try:
                     t = Teams.objects.get(commandId=el['id'])
-                    t.commandId=el['id']
-                    t.name=el['name']
-                    t.points=el['points']
-                    t.players=el['players']
-                    t.guessing=el['guessing']
-                    t.explaining=el['explaining']
+                    serializer = TeamSerializer(instance=t, data=el)
+                    if serializer.is_valid():
+                        serializer.save()
+
                 except Exception:
-                    t = Teams(
-                        lobbyId=lobbyId,
-                        commandId=el['id'],
-                        name=el['name'],
-                        points=el['points'],
-                        players=el['players'],
-                        guessing=el['guessing'],
-                        explaining=el['explaining']
-                    )
-                t.save()
+                    serializer = TeamSerializer(data=el)
+                    if serializer.is_valid():
+                        serializer.save()
             
-            # remove teams from db whitch was removed by user
-            remove_old_teams(text_data['teams'], lobbyId)
+            # remove teams from db that was removed by user
+            remove_old_teams(received_data['teams'], lobbyId)
         
         
+        if 'ids' in received_data.keys():
+            received_data.pop('ids')
+        if 'entities' in received_data.keys():
+            received_data['players'] = received_data.pop('entities')
         
-        if 'ids' in text_data.keys():
-            del text_data['ids']
-        if 'entities' in text_data.keys():
-            text_data['players'] = text_data['entities']
-            del text_data['entities']
-        d = text_data
-        
-        # d = build_ws_object(lobbyId)
-        print('Отправил', d)
+        print('Отправил', received_data)
         print('--------------------')
 
         async_to_sync(self.channel_layer.group_send)(
             self.room_group_name,
             {
             'type': 'broadcast',
-            'data': d,
+            'data': received_data,
             'sender_channel_name': self.channel_name
             }
         )
     
     
     def broadcast(self, event):
-        # print(event)
         if self.channel_name != event['sender_channel_name']:
             self.send(text_data=json.dumps({
                 'data': event['data']
             }))
-    
-    def new_player_connect(self, event):
-        print('New player event')
-        print(event)
-        if self.channel_name != event['sender_channel_name']:
-            self.send(text_data=json.dumps({
-                'players': event['players']
-            }))
+

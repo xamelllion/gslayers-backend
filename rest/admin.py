@@ -1,6 +1,7 @@
 from django.contrib import admin
 from . import models
 
-admin.register(models.Game)
-admin.register(models.Teams)
-admin.register(models.Players)
+admin.site.register(models.Game)
+admin.site.register(models.Teams)
+admin.site.register(models.Players)
+admin.site.register(models.Words)

@@ -33,15 +33,13 @@ def build_players_object(players, lobbyAdmin=None):
         check = False
 
     for element in players:
-        element = model_to_dict(element)
+        element = model_to_dict(element, fields=['playerId', 'name', 'team'])
         playerId = element['playerId']
 
-        del element['id']
         if element['team'] == 'None':
             element['team'] = None
-        del element['lobbyId']
-        element['id'] = playerId
-        del element['playerId']
+
+        element['id'] = element.pop('playerId')
 
         obj[playerId] = element
 
@@ -61,8 +59,7 @@ def build_team_list(teams: list) -> list:
     team_list = []
     for element in teams:
         element = model_to_dict(element)
-        commandId = element['commandId']
-        del element['commandId']
+        commandId = element.pop('commandId')
         element['id'] = commandId
         team_list.append(element)
 

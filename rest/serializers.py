@@ -3,9 +3,14 @@ from .models import Game, Teams, Players
 
 
 class TeamSerializer(serializers.ModelSerializer):
-    id = serializers.CharField(source='commandId')
 
     class Meta:
         model = Teams
-        fields = ('id', 'lobbyId', 'name', 'points', \
-                    'players', 'guessing', 'explaining')
+        fields = '__all__'
+
+
+class PlayerSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Players
+        fields = '__all__'

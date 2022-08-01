@@ -12,7 +12,7 @@ class Game(models.Model):
 class Teams(models.Model):
     lobbyId = models.CharField(max_length=36)
     commandId = models.CharField(max_length=36)
-    name = models.CharField(max_length=36)
+    name = models.CharField(max_length=36, blank=True)
     points = models.IntegerField()
     players = JSONField()
     guessing = models.IntegerField()
